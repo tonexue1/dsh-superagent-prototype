@@ -79,7 +79,8 @@ export function ExecutionSettings() {
   const executor = blocks.executor.value
   const saved = { ...executor, maxWorkers: String(executor.maxWorkers), blockedCommands: executor.blockedCommands.join(' ') }
   const draft = useBlockDraft('executor', saved, blocks.executor.revision,
-    value => ({ ...value, maxWorkers: numberOf(value.maxWorkers), blockedCommands: value.blockedCommands.split(/[\s,]+/).filter(Boolean) }))
+    value => ({ ...value, maxWorkers: numberOf(value.maxWorkers), blockedCommands: value.blockedCommands.split(/[\s,]+/).filter(Boolean),
+      opencode: { ...value.opencode, model: !value.opencode.model?.providerID.trim() && !value.opencode.model?.modelID.trim() ? null : value.opencode.model } }))
   const value = draft.value
   const edit = (next: Partial<typeof value>) => draft.edit({ ...value, ...next })
   const prepare = useRef<HTMLTextAreaElement>(null)
@@ -94,8 +95,20 @@ export function ExecutionSettings() {
       <Fields disabled={draft.busy}>
         <div className="dt-form dt-block">
           <h2 className="dt-block-title">{t('term.executor')}<InfoTip text={t('executorIntro')} /></h2>
-          <Section title={t('executorModel')} hint={t('executorModelHint')}><ModelField id="dt-worker-model" value={value.model}
-            onChange={model => edit({ model })} /></Section>
+          <Field label={t('workerBackend')} hint={t('workerBackendHint')}>
+            <select className="dt-select" value={value.backend} onChange={event => edit({ backend: event.target.value as 'dsh' | 'opencode' })}>
+              <option value="dsh">DSH</option><option value="opencode">OpenCode</option>
+            </select>
+          </Field>
+          {value.backend === 'opencode' ? <>
+            <Field label={t('opencodeUrl')}><Input type="url" required value={value.opencode.baseUrl}
+              onChange={event => edit({ opencode: { ...value.opencode, baseUrl: event.target.value } })} /></Field>
+            <Field label={t('opencodeProvider')}><Input value={value.opencode.model?.providerID ?? ''}
+              onChange={event => edit({ opencode: { ...value.opencode, model: { modelID: value.opencode.model?.modelID ?? '', providerID: event.target.value } } })} /></Field>
+            <Field label={t('opencodeModel')} hint={t('opencodeModelHint')}><Input value={value.opencode.model?.modelID ?? ''}
+              onChange={event => edit({ opencode: { ...value.opencode, model: { providerID: value.opencode.model?.providerID ?? '', modelID: event.target.value } } })} /></Field>
+          </> : <Section title={t('executorModel')} hint={t('executorModelHint')}><ModelField id="dt-worker-model" value={value.model}
+            onChange={model => edit({ model })} /></Section>}
           <Field label={t('maxWorkers')} hint={t('maxWorkersHint')}>
             <Input type="number" min={LIMITS.maxWorkers.min} max={LIMITS.maxWorkers.max} required value={value.maxWorkers}
               onChange={event => edit({ maxWorkers: event.target.value })} />

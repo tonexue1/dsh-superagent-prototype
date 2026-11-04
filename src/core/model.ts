@@ -312,7 +312,13 @@ export interface Ticket {
  * Thread closed; the ticket then ends unless its work has not finished (see `Tickets.unfinished`).
  */
 export interface Follow { thread: string; own: boolean; closed?: { at: string; outcome: 'merged' | 'closed' } }
-export interface Execution { name: string; directory: string; assignment: string }
+export interface Execution {
+  name: string; directory: string; assignment: string
+  /** Missing on older tickets means the built-in DSH executor. Backend changes affect new tickets only. */
+  backend?: 'dsh' | 'opencode'
+  /** External harness session, for inspection; never a DSH session link. */
+  externalSession?: { id: string; baseUrl: string }
+}
 
 /** Whether a ticket is open: it has not ended. */
 export const liveTicket = (ticket: Pick<Ticket, 'ended'>): boolean => !ticket.ended

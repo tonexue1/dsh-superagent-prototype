@@ -89,6 +89,14 @@ const CommandNameSchema = z.string().regex(/^[A-Za-z0-9._-]+$/).refine(name => n
   .refine(name => !WORKER_COMMANDS.includes(name), `${WORKER_COMMANDS.join(', ')} cannot be blocked`)
 /** Executor settings: worker model, concurrency, ticket directory root (empty defaults to `<stateDir>/work`), `prepare` command, and blocked commands. */
 export const ExecutorConfigSchema = z.object({
+  backend: z.enum(['dsh', 'opencode']).default('dsh'),
+  opencode: z.object({
+    baseUrl: z.string().url().refine(value => {
+      const url = new URL(value)
+      return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password && !url.search && !url.hash
+    }, 'An HTTP(S) server URL without credentials, query or fragment').default('http://127.0.0.1:4096'),
+    model: z.object({ providerID: z.string().trim().min(1), modelID: z.string().trim().min(1) }).strict().nullable().default(null),
+  }).strict().default(() => ({ baseUrl: 'http://127.0.0.1:4096', model: null })),
   model: RoleModelSchema.nullable().default(null),
   maxWorkers: z.number().int().min(LIMITS.maxWorkers.min).max(LIMITS.maxWorkers.max).default(3),
   directory: z.string().trim().refine(path => path === '' || path.startsWith('/'), 'An absolute path, or empty for <stateDir>/work').default(''),

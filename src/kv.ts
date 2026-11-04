@@ -19,6 +19,8 @@ export function family<V, A extends unknown[] = [string]>(prefix: string, format
 }
 
 export const KV = {
+  /** Persistent external harness session binding; no credentials are stored here. */
+  opencode: { session: family<import('./executor/opencode.ts').OpenCodeBinding, [ticket: string]>('opencode-session:') },
   /** Store: current database schema version. */
   store: { schema: record<number>('schema') },
   /** Settings: current revision, per-block revision, and saved settings snapshots (including the current one). */

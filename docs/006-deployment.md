@@ -46,6 +46,16 @@ Both presets run with `danger-full-access` as the operator's OS user and read me
 
    Sign in as the agent account; the last command prints its login. dsh-superagent reads the login the same way.
 
+### Local adaptation: owner-account requests
+
+This checkout supports an explicitly opted-in owner account as both requester and executor. The upstream default remains unchanged: self-authored GitHub messages are ignored unless the GitHub Source has a nonempty `selfRequestPrefix`.
+
+For this installation the prefix is `[DSH任务]`. Enable `observeIssues` and `observeComments`, keep only the owner on the allowed list, and start each manual request or follow-up with `[DSH任务] @tonexue1`. The prefix must be the first content in the Issue body or comment. GitHub does not deliver ordinary self-mentions as notifications, so repository observation is required.
+
+Replies carrying the host's `<!-- dsh-superagent:... -->` delivery marker, or the automated-agent disclosure, never qualify as owner requests, even if they quote the command. Normal self-authored comments remain ignored. The existing allowed-list gate still applies. The prefix is an input convention within one account; it does not provide separate account privileges.
+
+This is a local source change, not an upstream feature. Preserve it and its tests when upgrading. Automatic merging remains disabled in this installation.
+
 ### Feishu bot (optional)
 
 1. Create a self-built app with the bot capability. Grant it the permissions to receive message events, read and send chat messages, and read chat members, then publish the app version.

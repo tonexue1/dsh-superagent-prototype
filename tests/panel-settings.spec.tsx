@@ -9,6 +9,21 @@ import { usePanel, mount, remount, settle, all, find, tab, click, type, text, fi
 import { server } from './fixtures/panel-server.ts'
 
 usePanel()
+it('selects OpenCode for new workers and saves its independent endpoint and model', async () => {
+  await mount()
+  await click(zh['tab.execution'])
+  await click(find(zh['tab.settings'], '.dt-status-head button'))
+  const select = field<HTMLSelectElement>('Worker 后端')
+  await act(async () => { select.value = 'opencode'; select.dispatchEvent(new Event('change', { bubbles: true })) })
+  await type(field<HTMLInputElement>('OpenCode 服务地址'), 'http://localhost:4098')
+  await type(field<HTMLInputElement>('OpenCode 提供方'), 'fixture')
+  await type(field<HTMLInputElement>('OpenCode 模型'), 'worker')
+  await click(zh.save)
+  expect(server.settings.executor).toMatchObject({ backend: 'opencode', opencode: {
+    baseUrl: 'http://localhost:4098', model: { providerID: 'fixture', modelID: 'worker' },
+  } })
+})
+
 it('keeps a person\'s own value where another save changed the same setting, and says so', async () => {
   await mount()
   await click(zh['tab.execution'])
@@ -53,7 +68,7 @@ it('saves the Eval block on the Policy settings and the Executor with its execut
     'worker-model'); await type(effort as HTMLInputElement, 'high')
   expect([...document.querySelectorAll('#dt-worker-model-efforts option')].map(option => option.getAttribute('value'))).toEqual(['high'])
   await click(zh.save)
-  expect(server.settings.executor).toEqual({ maxWorkers: 5, directory: '/srv/work',
+  expect(server.settings.executor).toEqual({ backend: 'dsh', opencode: { baseUrl: 'http://127.0.0.1:4096', model: null }, maxWorkers: 5, directory: '/srv/work',
     prepare: 'git worktree add "$DSH_SUPERAGENT_DIR"', blockedCommands: ['gh-personal', 'gh.other'], model: { provider: 'worker-provider',
       model: 'worker-model', reasoningEffort: 'high' } })
   expect(server.requests.filter(request => request.method === 'PUT').map(request => request.path)).toEqual(['settings/eval',

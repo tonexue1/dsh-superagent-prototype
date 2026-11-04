@@ -1191,7 +1191,7 @@ describe('observing the GitHub repository', () => {
   const issue = (number: number, fields: Partial<GithubIssue> = {}): GithubIssue => ({ id: 1000 + number, number, title: `Issue ${number}`,
     body: 'details', state: 'open', created_at: at(0), updated_at: at(0),
     html_url: `https://github.com/acme/widgets/issues/${number}`, user: { login: 'carol', type: 'User' }, ...fields })
-  const observe = (h: ReturnType<typeof host>, config: Record<string, boolean>) =>
+  const observe = (h: ReturnType<typeof host>, config: Record<string, unknown>) =>
     h.store.saveSettings({ ...h.store.settings(), sources: { ...h.store.settings().sources, github: { enabled: true, config } } })
   /** GitHub as the repository's lists and its default branch answer; a request with the ETag of an unchanged list answers 304. */
   function repository(h: ReturnType<typeof host>, answers: { issues?: unknown[]; comments?: unknown[]; reviewComments?: unknown[];
@@ -1213,6 +1213,40 @@ describe('observing the GitHub repository', () => {
     })
     return calls
   }
+  it('routes explicitly marked owner Issues and comments, but never re-ingests delivered replies', async () => {
+    const h = host()
+    observe(h, { observeIssues: true, observeComments: true, selfRequestPrefix: '[DSH任务]' })
+    const settings = h.store.settings()
+    h.store.saveSettings({ ...settings, policy: { ...settings.policy,
+      sources: { ...settings.policy.sources, github: { allowed: [{ id: 'agent-bot' }] } } } })
+    h.store.set('github-since', at(-24))
+    h.store.set('github-stream:issues', { since: at(0), started: { issues: at(0) } })
+    for (const stream of ['comments', 'review-comments']) {
+      h.store.set(`github-stream:${stream}`, { since: at(0), started: { comments: at(0) } })
+    }
+    const owner = { login: 'agent-bot', type: 'User' }
+    const comment = (id: number, body: string) => ({ id, body, user: owner, created_at: at(2), updated_at: at(2),
+      issue_url: 'https://api.github.com/repos/acme/widgets/issues/15',
+      html_url: `https://github.com/acme/widgets/issues/15#issuecomment-${id}` })
+    repository(h, {
+      issues: [issue(15, { user: owner, body: '[DSH任务] @agent-bot run tests', created_at: at(1), updated_at: at(1) }),
+        issue(16, { user: owner, body: 'An ordinary issue @agent-bot', created_at: at(1), updated_at: at(1) })],
+      comments: [comment(201, '[DSH任务] @agent-bot stop this task'),
+        comment(202, '[DSH任务] @agent-bot copied request\n\n<!-- dsh-superagent:reply-1 -->'),
+        comment(203, 'A normal comment @agent-bot')],
+    })
+    await expect(pollRound(h)).resolves.toBeDefined()
+    const received = h.receive.mock.calls.map(([trigger]) => trigger)
+    expect(received.map(trigger => [trigger.meta.number, trigger.meta.kind, trigger.meta.commentId]))
+      .toEqual([[15, 'issue', undefined], [15, 'conversation', 201]])
+    expect(received.map(trigger => [trigger.human, trigger.addressed])).toEqual([[true, 'mention'], [true, 'mention']])
+    expect(h.engine.candidate(received[0]!.id)?.strength).toBe('explicit')
+    // A thread assesses one batch at a time; the later owner request stays queued behind the active assessment.
+    expect(h.store.threads.get('github:15')!.pending).toContain(received[1]!.id)
+    expect(settingsPolicy(h.store.settings(), h.sources).gate(received[1]!, h.store.threads.get('github:15')!, []))
+      .toMatchObject({ admissible: true, strength: 'explicit' })
+    h.store.close()
+  })
   it('takes in the new Issues and PRs from when it started observing them, and asks again with the ETag while nothing is newer',
     async () => {
     const h = host()

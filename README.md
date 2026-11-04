@@ -10,6 +10,8 @@ It is also a way of working with an agent: **take as little human attention as p
 
 ## Setup
 
+This fork supports optional **OpenCode workers** while keeping the DSH orchestrator and existing task lifecycle. See [OpenCode setup and verification](docs/009-opencode.md). The default worker backend remains DSH.
+
 Setup has many steps, so an agent does it with you. Ask your coding agent:
 
 > Read SETUP.md in this repository and set up dsh-superagent with me.
@@ -29,6 +31,7 @@ Read the numbered documents in order; each builds only on the ones before it.
 - [006 Deployment](docs/006-deployment.md): manual setup, configuration, upgrades and troubleshooting
 - [007 Architecture](docs/007-architecture.md)
 - [008 Cookbook](docs/008-cookbook.md): adding a Source
+- [009 OpenCode workers](docs/009-opencode.md): selectable external harness backend
 
 ## Development
 

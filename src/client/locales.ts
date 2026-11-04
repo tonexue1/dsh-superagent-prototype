@@ -6,6 +6,14 @@ import { SETUP_PROBLEMS } from '../setup.ts'
 import { HEALTH_TEXT } from '../sources/host.ts'
 
 const TEXT = {
+  workerBackend: ['Worker 后端', 'Worker backend'],
+  workerBackendHint: ['只影响新工单；已有工单继续使用原来的后端。', 'Applies to new tickets; existing tickets keep their backend.'],
+  opencodeUrl: ['OpenCode 服务地址', 'OpenCode server URL'],
+  opencodeProvider: ['OpenCode 提供方', 'OpenCode provider'],
+  opencodeModel: ['OpenCode 模型', 'OpenCode model'],
+  opencodeModelHint: ['提供方和模型均留空时使用 OpenCode 的默认模型。', 'Leave both identifiers empty to use the OpenCode default model.'],
+  'change.workerBackend': ['Worker 后端：{from} → {to}', 'Worker backend: {from} → {to}'],
+  'change.opencodeConfig': ['OpenCode 连接或模型', 'OpenCode connection or model'],
   // Shared
   title: ['Superagent', 'Superagent'],
   close: ['关闭', 'Close'],
